@@ -15,6 +15,7 @@ export interface StoriesObject {
 
 export interface SearchProps {
   onInputChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  handleConfirmButton: () => void;
   value: string;
   id: string;
   type?: string;

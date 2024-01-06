@@ -72,11 +72,11 @@ const App = () => {
 
   const [searchTerm, setSearchTerm] = useStorageState('search', '');
 
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
   };
 
-  useEffect(() => {
+  const handleConfirmButton = () => {
     if (searchTerm === '') return;
 
     fetch(`${API_ENDPOINT}${searchTerm}`)
@@ -87,14 +87,14 @@ const App = () => {
           payload: result.hits
         });
       });
-  }, [searchTerm]);
+  };
 
   const handleDelete = (item: StoriesObject) => {
     dispatchStories({
       type: 'REMOVE_STORIES',
       payload: item
     });
-  }
+  };
 
   return (
     <>
@@ -102,9 +102,10 @@ const App = () => {
         <h1>My Hacker Stories</h1>
 
         <InputWithLabel
-          onInputChange={handleSearch}
           value={searchTerm}
           id='search'
+          onInputChange={handleInputChange}
+          handleConfirmButton={handleConfirmButton}
         >
           <strong>Search: </strong>
         </InputWithLabel>
@@ -116,7 +117,7 @@ const App = () => {
         ) : (
           <List
             list={stories.data}
-            onButtonClick={handleDelete}
+            onDeleteButtonClick={handleDelete}
           />
         )}
       </div>
@@ -124,7 +125,7 @@ const App = () => {
   )
 }
 
-const InputWithLabel = ({ type = 'text', value, onInputChange, id, children }: SearchProps) => {
+const InputWithLabel = ({ type = 'text', value, id, children, onInputChange, handleConfirmButton }: SearchProps) => {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onInputChange(event);
   };
@@ -133,17 +134,18 @@ const InputWithLabel = ({ type = 'text', value, onInputChange, id, children }: S
     <>
       <label htmlFor={id}>{children}</label>
       <input
+        onChange={handleChange}
         id={id}
         type={type}
-        onChange={handleChange}
         value={value}
       >
       </input>
+      <button onClick={() => handleConfirmButton()}>Confirm</button>
     </>
   )
 }
 
-const List = ({ list, onButtonClick }: Stories) => {
+const List = ({ list, onDeleteButtonClick }: Stories) => {
   return (
     <ul>
       {list?.map((item: StoriesObject) => {
@@ -151,7 +153,7 @@ const List = ({ list, onButtonClick }: Stories) => {
           <Item
             key={list.objectID}
             {...item}
-            onButtonClick={onButtonClick}
+            onDeleteButtonClick={onDeleteButtonClick}
           />
         )
       })}
@@ -159,7 +161,7 @@ const List = ({ list, onButtonClick }: Stories) => {
   )
 }
 
-const Item = ({ title, url, objectID, author, num_comments, points, onButtonClick }: Stories) => {
+const Item = ({ title, url, objectID, author, num_comments, points, onConfirmButtonClick }: Stories) => {
   return (
     <li key={objectID}>
       <span>
@@ -169,7 +171,7 @@ const Item = ({ title, url, objectID, author, num_comments, points, onButtonClic
       <span>{num_comments}</span>
       <span>{points}</span>
       <span>
-        <button id={objectID} onClick={onButtonClick}>Remove</button>
+        <button id={objectID} onClick={onConfirmButtonClick}>Remove</button>
       </span>
     </li>
   )
