@@ -1,11 +1,13 @@
-import { useEffect, useReducer, useState } from 'react';
+import React, { useCallback, useEffect, useReducer, useState } from 'react';
 import './App.css'
 import {
   SearchProps,
   Stories,
   StoriesObject,
-  StoriesReducerAction
-} from './App.d'
+  StoriesReducerAction,
+  SearchFormProps
+} from './App.d';
+import axios from 'axios';
 
 const API_ENDPOINT = 'https://hn.algolia.com/api/v1/search?query=';
 
@@ -45,21 +47,6 @@ const App = () => {
 
   const [stories, dispatchStories] = useReducer(storiesReducer, []);
 
-  useEffect(() => {
-    fetch(`${API_ENDPOINT}react`)
-      .then((response) => response.json()
-        .then((result) => {
-          dispatchStories({
-            type: 'STORIES_FETCH_SUCCESS',
-            payload: result.hits
-          });
-        }).catch(() => {
-          dispatchStories({
-            type: 'STORIES_FETCH_FAILURE'
-          });
-        }));
-  }, []);
-
   const useStorageState = (key: string, initialState: string) => {
     const [value, setValue] = useState(localStorage.getItem(key) || initialState);
 
@@ -72,21 +59,45 @@ const App = () => {
 
   const [searchTerm, setSearchTerm] = useStorageState('search', '');
 
+  const handleFetchStories = useCallback(async () => {
+    if (!searchTerm) return;
+
+    dispatchStories({
+      type: 'STORIES_FETCH_INIT'
+    });
+
+    const result = await axios.get(`${API_ENDPOINT}react`);
+
+    try {
+      dispatchStories({
+        type: 'STORIES_FETCH_SUCCESS',
+        payload: result.data.hits
+      });
+    } catch {
+      dispatchStories({
+        type: 'STORIES_FETCH_FAILURE'
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    handleFetchStories();
+  }, [handleFetchStories]);
+
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
   };
 
-  const handleConfirmButton = () => {
-    if (searchTerm === '') return;
+  const handleConfirmButton = async (event: React.MouseEvent<HTMLElement>) => {
+    event?.preventDefault();
+    if (!searchTerm) return;
 
-    fetch(`${API_ENDPOINT}${searchTerm}`)
-      .then((response) => response.json())
-      .then((result) => {
-        dispatchStories({
-          type: 'STORIES_FETCH_SUCCESS',
-          payload: result.hits
-        });
-      });
+    const result = await axios.get(`${API_ENDPOINT}${searchTerm}`);
+
+    dispatchStories({
+      type: 'STORIES_FETCH_SUCCESS',
+      payload: result.data.hits
+    });
   };
 
   const handleDelete = (item: StoriesObject) => {
@@ -101,14 +112,11 @@ const App = () => {
       <div>
         <h1>My Hacker Stories</h1>
 
-        <InputWithLabel
-          value={searchTerm}
-          id='search'
-          onInputChange={handleInputChange}
-          handleConfirmButton={handleConfirmButton}
-        >
-          <strong>Search: </strong>
-        </InputWithLabel>
+        <SearchForm
+          searchTerm={searchTerm}
+          onSearchInput={handleInputChange}
+          onSearchSubmit={handleConfirmButton}
+        />
 
         {stories.isError && <p>Something went wrong...</p>}
 
@@ -125,7 +133,22 @@ const App = () => {
   )
 }
 
-const InputWithLabel = ({ type = 'text', value, id, children, onInputChange, handleConfirmButton }: SearchProps) => {
+const SearchForm = ({ searchTerm, onSearchInput, onSearchSubmit }: SearchFormProps) => {
+  return (
+    <form onSubmit={() => onSearchSubmit}>
+      <InputWithLabel
+        value={searchTerm}
+        id='search'
+        onInputChange={onSearchInput}
+      >
+        <strong>Search: </strong>
+      </InputWithLabel>
+      <button type="submit" disabled={!searchTerm}>Submit</button>
+    </form>
+  )
+};
+
+const InputWithLabel = ({ type = 'text', value, id, children, onInputChange }: SearchProps) => {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onInputChange(event);
   };
@@ -140,7 +163,6 @@ const InputWithLabel = ({ type = 'text', value, id, children, onInputChange, han
         value={value}
       >
       </input>
-      <button onClick={() => handleConfirmButton()}>Confirm</button>
     </>
   )
 }

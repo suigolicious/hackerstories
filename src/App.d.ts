@@ -15,7 +15,6 @@ export interface StoriesObject {
 
 export interface SearchProps {
   onInputChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  handleConfirmButton: () => void;
   value: string;
   id: string;
   type?: string;
@@ -37,4 +36,10 @@ interface StoriesReducerPayload {
 export interface StoriesReducerAction {
   type?: string;
   payload?: typeof StoriesReducerPayload;
+}
+
+export interface SearchFormProps {
+  searchTerm: string;
+  onSearchInput: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onSearchSubmit: (event: React.MouseEvent<HTMLElement>) => Promise<void>;
 }
